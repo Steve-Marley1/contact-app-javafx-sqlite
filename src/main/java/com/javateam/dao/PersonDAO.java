@@ -4,13 +4,14 @@ import com.javateam.model.Person;
 import com.javateam.util.DatabaseConnection;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PersonDAO {
 
     // =========================
-    // READ - Get all persons
+    // READ
     // =========================
     public List<Person> getAllPersons() {
 
@@ -23,6 +24,13 @@ public class PersonDAO {
 
             while (rs.next()) {
 
+                String birthDateStr = rs.getString("birth_date");
+                LocalDate birthDate = null;
+
+                if (birthDateStr != null) {
+                    birthDate = LocalDate.parse(birthDateStr);
+                }
+
                 Person p = new Person(
                         rs.getInt("idperson"),
                         rs.getString("lastname"),
@@ -31,7 +39,7 @@ public class PersonDAO {
                         rs.getString("phone_number"),
                         rs.getString("address"),
                         rs.getString("email_address"),
-                        rs.getString("birth_date")
+                        birthDate
                 );
 
                 persons.add(p);
@@ -45,7 +53,7 @@ public class PersonDAO {
     }
 
     // =========================
-    // CREATE - Add person
+    // CREATE
     // =========================
     public void addPerson(Person p) {
 
@@ -64,7 +72,12 @@ public class PersonDAO {
             stmt.setString(4, p.getPhoneNumber());
             stmt.setString(5, p.getAddress());
             stmt.setString(6, p.getEmailAddress());
-            stmt.setString(7, p.getBirthDate());
+
+            if (p.getBirthDate() != null) {
+                stmt.setString(7, p.getBirthDate().toString());
+            } else {
+                stmt.setNull(7, Types.VARCHAR);
+            }
 
             stmt.executeUpdate();
 
@@ -117,7 +130,13 @@ public class PersonDAO {
             stmt.setString(4, p.getPhoneNumber());
             stmt.setString(5, p.getAddress());
             stmt.setString(6, p.getEmailAddress());
-            stmt.setString(7, p.getBirthDate());
+
+            if (p.getBirthDate() != null) {
+                stmt.setString(7, p.getBirthDate().toString());
+            } else {
+                stmt.setNull(7, Types.VARCHAR);
+            }
+
             stmt.setInt(8, p.getIdperson());
 
             stmt.executeUpdate();
