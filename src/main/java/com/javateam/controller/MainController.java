@@ -5,33 +5,25 @@ import com.javateam.service.PersonService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.StringConverter;
 
-import java.net.URL;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.time.format.DateTimeFormatter;
 
-public class MainController implements Initializable {
+public class MainController {
 
-    private final PersonService personService = new PersonService();
-    private final ObservableList<Person> personList = FXCollections.observableArrayList();
-
-    // ===== TABLE =====
     @FXML private TableView<Person> personTable;
     @FXML private TableColumn<Person, Integer> idColumn;
-    @FXML private TableColumn<Person, String> firstNameColumn;
-    @FXML private TableColumn<Person, String> lastNameColumn;
+    @FXML private TableColumn<Person, String> firstnameColumn;
+    @FXML private TableColumn<Person, String> lastnameColumn;
     @FXML private TableColumn<Person, String> nicknameColumn;
     @FXML private TableColumn<Person, String> phoneColumn;
     @FXML private TableColumn<Person, String> emailColumn;
     @FXML private TableColumn<Person, String> addressColumn;
     @FXML private TableColumn<Person, LocalDate> birthDateColumn;
 
-    // ===== FORM FIELDS =====
     @FXML private TextField firstnameField;
     @FXML private TextField lastnameField;
     @FXML private TextField nicknameField;
@@ -40,196 +32,176 @@ public class MainController implements Initializable {
     @FXML private TextField addressField;
     @FXML private DatePicker birthDatePicker;
 
-    // ===== BUTTONS =====
-    @FXML private Button addButton;
-    @FXML private Button updateButton;
-    @FXML private Button deleteButton;
+    private final PersonService service = new PersonService();
+    private final ObservableList<Person> persons = FXCollections.observableArrayList();
+    private static final DateTimeFormatter UI_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    @FXML
+    public void initialize() {
 
-        // Column Mapping
         idColumn.setCellValueFactory(new PropertyValueFactory<>("idperson"));
-        firstNameColumn.setCellValueFactory(new PropertyValueFactory<>("firstname"));
-        lastNameColumn.setCellValueFactory(new PropertyValueFactory<>("lastname"));
+        firstnameColumn.setCellValueFactory(new PropertyValueFactory<>("firstname"));
+        lastnameColumn.setCellValueFactory(new PropertyValueFactory<>("lastname"));
         nicknameColumn.setCellValueFactory(new PropertyValueFactory<>("nickname"));
         phoneColumn.setCellValueFactory(new PropertyValueFactory<>("phoneNumber"));
         emailColumn.setCellValueFactory(new PropertyValueFactory<>("emailAddress"));
         addressColumn.setCellValueFactory(new PropertyValueFactory<>("address"));
         birthDateColumn.setCellValueFactory(new PropertyValueFactory<>("birthDate"));
 
-        loadPersons();
-
-        // Selection Listener
-        personTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
-            if (newSel != null) {
-                firstnameField.setText(newSel.getFirstname());
-                lastnameField.setText(newSel.getLastname());
-                nicknameField.setText(newSel.getNickname());
-                phoneField.setText(newSel.getPhoneNumber());
-                emailField.setText(newSel.getEmailAddress());
-                addressField.setText(newSel.getAddress());
-                birthDatePicker.setValue(newSel.getBirthDate());
+        birthDateColumn.setCellFactory(col -> new TableCell<>() {
+            @Override protected void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : UI_DATE_FORMAT.format(item));
             }
         });
 
-        addButton.setOnAction(e -> handleAdd());
-        updateButton.setOnAction(e -> handleUpdate());
-        deleteButton.setOnAction(e -> handleDelete());
+        birthDatePicker.setConverter(new StringConverter<>() {
+            @Override public String toString(LocalDate date) {
+                return date == null ? "" : UI_DATE_FORMAT.format(date);
+            }
+            @Override public LocalDate fromString(String s) {
+                if (s == null || s.isBlank()) return null;
+                return LocalDate.parse(s.trim(), UI_DATE_FORMAT);
+            }
+        });
+        birthDatePicker.setPromptText("dd/MM/yyyy");
+
+        installTextFormatters(); // UX (pas métier)
+
+        refreshTable();
+
+        personTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, p) -> {
+            if (p != null) {
+                firstnameField.setText(p.getFirstname());
+                lastnameField.setText(p.getLastname());
+                nicknameField.setText(p.getNickname());
+                phoneField.setText(p.getPhoneNumber());
+                emailField.setText(p.getEmailAddress());
+                addressField.setText(p.getAddress());
+                birthDatePicker.setValue(p.getBirthDate());
+            }
+        });
+        // IMPORTANT : supprime le décalage
+        personTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // Largeurs proportionnelles
+        idColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.05);
+        firstnameColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
+        lastnameColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
+        nicknameColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
+        phoneColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
+        emailColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.18);
+        addressColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.17);
+        birthDateColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
     }
 
-    // ===== LOAD DATA =====
-    private void loadPersons() {
-        List<Person> persons = personService.getAllPersons();
-        personList.setAll(persons);
-        personTable.setItems(personList);
+    private void installTextFormatters() {
+
+        // Phone: chiffres only + max 10 (UX)
+        phoneField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.matches("\\d{0,10}") ? change : null;
+        }));
+
+        // Names: lettres + espace + - + ' (UX)
+        firstnameField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.matches("[\\p{L} '\\-]{0,45}") ? change : null;
+        }));
+
+        lastnameField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.matches("[\\p{L} '\\-]{0,45}") ? change : null;
+        }));
+
+        // Email: empêcher les espaces (UX)
+        emailField.setTextFormatter(new TextFormatter<>(change -> {
+            String newText = change.getControlNewText();
+            return newText.contains(" ") ? null : change;
+        }));
     }
 
-    // ===== ADD =====
+    // ================= BUTTONS =================
+
+    @FXML
     private void handleAdd() {
-
-        if (!validateFields()) return;
-
-        Person person = new Person(
-                firstnameField.getText(),
-                lastnameField.getText(),
-                nicknameField.getText(),
-                phoneField.getText(),
-                addressField.getText(),
-                emailField.getText(),
-                birthDatePicker.getValue()
-        );
-
-        personService.addPerson(person);
-        clearFields();
-        loadPersons();
+        try {
+            Person p = buildPersonFromForm();
+            service.addPerson(p);
+            refreshTable();
+            clearForm();
+            showInfo("Succès", "Contact ajouté.");
+        } catch (Exception ex) {
+            showError("Erreur", ex.getMessage());
+        }
     }
 
-    // ===== UPDATE =====
+    @FXML
     private void handleUpdate() {
-
         Person selected = personTable.getSelectionModel().getSelectedItem();
-
         if (selected == null) {
-            showAlert("Error", "Please select a person to update.");
+            showError("Erreur", "Veuillez sélectionner un contact à modifier.");
             return;
         }
 
-        if (!validateFields()) return;
-
-        selected.setFirstname(firstnameField.getText());
-        selected.setLastname(lastnameField.getText());
-        selected.setNickname(nicknameField.getText());
-        selected.setPhoneNumber(phoneField.getText());
-        selected.setEmailAddress(emailField.getText());
-        selected.setAddress(addressField.getText());
-        selected.setBirthDate(birthDatePicker.getValue());
-
-        personService.updatePerson(selected);
-        clearFields();
-        loadPersons();
+        try {
+            Person p = buildPersonFromForm();
+            p.setIdperson(selected.getIdperson());
+            service.updatePerson(p);
+            refreshTable();
+            clearForm();
+            showInfo("Succès", "Contact modifié.");
+        } catch (Exception ex) {
+            showError("Erreur", ex.getMessage());
+        }
     }
 
-    // ===== DELETE =====
+    @FXML
     private void handleDelete() {
-
         Person selected = personTable.getSelectionModel().getSelectedItem();
-
         if (selected == null) {
-            showAlert("Error", "Please select a person to delete.");
+            showError("Erreur", "Veuillez sélectionner un contact à supprimer.");
             return;
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm Delete");
-        confirm.setHeaderText("Delete Contact");
-        confirm.setContentText("Are you sure you want to delete this contact?");
+        confirm.setTitle("Confirmation");
+        confirm.setHeaderText("Supprimer ce contact ?");
+        confirm.setContentText("Cette action est irréversible.");
 
-        Optional<ButtonType> result = confirm.showAndWait();
-
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            personService.deletePerson(selected.getIdperson());
-            clearFields();
-            loadPersons();
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            try {
+                service.deletePerson(selected.getIdperson());
+                refreshTable();
+                clearForm();
+                showInfo("Succès", "Contact supprimé.");
+            } catch (Exception ex) {
+                showError("Erreur", ex.getMessage());
+            }
         }
     }
 
-    // ===== VALIDATION =====
-    private boolean validateFields() {
+    // ================= HELPERS =================
 
-    String firstname = firstnameField.getText().trim();
-    String lastname = lastnameField.getText().trim();
-    String nickname = nicknameField.getText().trim();
-    String phone = phoneField.getText().trim();
-    String email = emailField.getText().trim();
-
-    // Required fields
-    if (firstname.isEmpty() || lastname.isEmpty() || nickname.isEmpty()) {
-        showAlert("Validation Error",
-                "Firstname, Lastname and Nickname are required.");
-        return false;
+    private Person buildPersonFromForm() {
+        // ordre CORRECT : emailField puis addressField
+        return new Person(
+                firstnameField.getText(),
+                lastnameField.getText(),
+                nicknameField.getText(),
+                phoneField.getText(),
+                emailField.getText(),
+                addressField.getText(),
+                birthDatePicker.getValue()
+        );
     }
 
-    // Phone validation (exactly 10 digits)
-    if (!phone.matches("\\d{10}")) {
-        showAlert("Validation Error",
-                "Phone number must contain exactly 10 digits.");
-        return false;
+    private void refreshTable() {
+        persons.setAll(service.getAllPersons());
+        personTable.setItems(persons);
     }
 
-    // Email validation
-    if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-        showAlert("Validation Error",
-                "Please enter a valid email address.");
-        return false;
-    }
-
-    // Birth date validation
-LocalDate birthDate = birthDatePicker.getValue();
-
-    if (birthDate == null) {
-        showAlert("Validation Error", "Please select a birth date.");
-        return false;
-    }
-
-    if (birthDate.isAfter(LocalDate.now())) {
-        showAlert("Validation Error", "Birth date cannot be in the future.");
-        return false;
-    }
-
-    if (birthDate.getYear() < 1900) {
-        showAlert("Validation Error", "Birth year must be after 1900.");
-        return false;
-    }
-
-    // Name validation
-    String nameRegex = "^[A-Za-zÀ-ÖØ-öø-ÿ\\- ]+$";
-
-    if (!firstnameField.getText().matches(nameRegex)) {
-        showAlert("Validation Error", "Firstname must contain only letters.");
-        return false;
-    }
-
-    if (!lastnameField.getText().matches(nameRegex)) {
-        showAlert("Validation Error", "Lastname must contain only letters.");
-        return false;
-    }
-
-    return true;
-    }
-
-    // ===== ALERT =====
-    private void showAlert(String title, String message) {
-
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    // ===== CLEAR =====
-    private void clearFields() {
+    private void clearForm() {
         firstnameField.clear();
         lastnameField.clear();
         nicknameField.clear();
@@ -237,5 +209,22 @@ LocalDate birthDate = birthDatePicker.getValue();
         emailField.clear();
         addressField.clear();
         birthDatePicker.setValue(null);
+        personTable.getSelectionModel().clearSelection();
+    }
+
+    private void showError(String title, String msg) {
+        Alert a = new Alert(Alert.AlertType.ERROR);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.showAndWait();
+    }
+
+    private void showInfo(String title, String msg) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.showAndWait();
     }
 }

@@ -10,139 +10,114 @@ import java.util.List;
 
 public class PersonDAO {
 
-    // =========================
-    // READ
-    // =========================
-    public List<Person> getAllPersons() {
-
-        List<Person> persons = new ArrayList<>();
-        String sql = "SELECT * FROM person";
-
-        try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-
-                String birthDateStr = rs.getString("birth_date");
-                LocalDate birthDate = null;
-
-                if (birthDateStr != null) {
-                    birthDate = LocalDate.parse(birthDateStr);
-                }
-
-                Person p = new Person(
-                        rs.getInt("idperson"),
-                        rs.getString("lastname"),
-                        rs.getString("firstname"),
-                        rs.getString("nickname"),
-                        rs.getString("phone_number"),
-                        rs.getString("address"),
-                        rs.getString("email_address"),
-                        birthDate
-                );
-
-                persons.add(p);
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return persons;
-    }
-
-    // =========================
-    // CREATE
-    // =========================
-    public void addPerson(Person p) {
+    public int addPerson(Person person) {
 
         String sql = """
                 INSERT INTO person
-                (lastname, firstname, nickname, phone_number, address, email_address, birth_date)
+                (firstname, lastname, nickname, phone_number, email_address, address, birth_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, p.getLastname());
-            stmt.setString(2, p.getFirstname());
-            stmt.setString(3, p.getNickname());
-            stmt.setString(4, p.getPhoneNumber());
-            stmt.setString(5, p.getAddress());
-            stmt.setString(6, p.getEmailAddress());
+            ps.setString(1, person.getFirstname());
+            ps.setString(2, person.getLastname());
+            ps.setString(3, person.getNickname());
+            ps.setString(4, person.getPhoneNumber());
+            ps.setString(5, person.getEmailAddress());
+            ps.setString(6, person.getAddress());
+            ps.setString(7, person.getBirthDate().toString());
 
-            if (p.getBirthDate() != null) {
-                stmt.setString(7, p.getBirthDate().toString());
-            } else {
-                stmt.setNull(7, Types.VARCHAR);
+            ps.executeUpdate();
+
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
             }
 
-            stmt.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+        return -1;
+    }
+
+    public void updatePerson(Person person) {
+
+        String sql = """
+                UPDATE person SET
+                firstname = ?, lastname = ?, nickname = ?,
+                phone_number = ?, email_address = ?, address = ?, birth_date = ?
+                WHERE idperson = ?
+                """;
+
+        try (Connection conn = DatabaseConnection.connect();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, person.getFirstname());
+            ps.setString(2, person.getLastname());
+            ps.setString(3, person.getNickname());
+            ps.setString(4, person.getPhoneNumber());
+            ps.setString(5, person.getEmailAddress());
+            ps.setString(6, person.getAddress());
+            ps.setString(7, person.getBirthDate().toString());
+            ps.setInt(8, person.getIdperson());
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    // =========================
-    // DELETE
-    // =========================
     public void deletePerson(int id) {
 
         String sql = "DELETE FROM person WHERE idperson = ?";
 
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
-            stmt.executeUpdate();
+            ps.setInt(1, id);
+            ps.executeUpdate();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    // =========================
-    // UPDATE
-    // =========================
-    public void updatePerson(Person p) {
+    public List<Person> getAllPersons() {
+
+        List<Person> persons = new ArrayList<>();
 
         String sql = """
-                UPDATE person SET
-                lastname = ?,
-                firstname = ?,
-                nickname = ?,
-                phone_number = ?,
-                address = ?,
-                email_address = ?,
-                birth_date = ?
-                WHERE idperson = ?
+                SELECT idperson, firstname, lastname, nickname,
+                       phone_number, email_address, address, birth_date
+                FROM person
                 """;
 
         try (Connection conn = DatabaseConnection.connect();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-            stmt.setString(1, p.getLastname());
-            stmt.setString(2, p.getFirstname());
-            stmt.setString(3, p.getNickname());
-            stmt.setString(4, p.getPhoneNumber());
-            stmt.setString(5, p.getAddress());
-            stmt.setString(6, p.getEmailAddress());
+            while (rs.next()) {
 
-            if (p.getBirthDate() != null) {
-                stmt.setString(7, p.getBirthDate().toString());
-            } else {
-                stmt.setNull(7, Types.VARCHAR);
+                persons.add(new Person(
+                        rs.getInt("idperson"),
+                        rs.getString("firstname"),
+                        rs.getString("lastname"),
+                        rs.getString("nickname"),
+                        rs.getString("phone_number"),
+                        rs.getString("email_address"),
+                        rs.getString("address"),
+                        LocalDate.parse(rs.getString("birth_date"))
+                ));
             }
 
-            stmt.setInt(8, p.getIdperson());
-
-            stmt.executeUpdate();
-
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+
+        return persons;
     }
 }

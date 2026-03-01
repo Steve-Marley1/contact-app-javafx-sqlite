@@ -2,7 +2,7 @@ package com.javateam.dao;
 
 import com.javateam.model.Person;
 import com.javateam.util.DatabaseInitializer;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -12,68 +12,33 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PersonDAOTest {
 
-    private static PersonDAO dao;
+    private PersonDAO dao;
 
-    @BeforeAll
-    static void setup() {
+    @BeforeEach
+    void setup() {
         DatabaseInitializer.initialize();
+        DatabaseInitializer.clearTable();
         dao = new PersonDAO();
     }
 
     @Test
-    void testAddPerson() {
-
-        Person person = new Person(
-                "JUnitLast",
-                "JUnitFirst",
-                "Nick",
-                "123",
-                "",
-                "",
-                LocalDate.now()
+    void addPerson_shouldInsertAndReturnId() {
+        Person p = new Person(
+                "Test",
+                "User",
+                "TU",
+                "0612345678",
+                "test@mail.com",
+                "10 rue test",
+                LocalDate.of(2000, 1, 1)
         );
 
-        dao.addPerson(person);
+        int id = dao.addPerson(p);
+        assertTrue(id > 0);
 
         List<Person> persons = dao.getAllPersons();
-
-        boolean exists = persons.stream()
-                .anyMatch(p -> p.getLastname().equals("JUnitLast"));
-
-        assertTrue(exists);
-    }
-
-    @Test
-    void testDeletePerson() {
-
-        Person person = new Person(
-                "DeleteTest",
-                "First",
-                "Nick",
-                "000",
-                "",
-                "",
-                LocalDate.now()
-        );
-
-        dao.addPerson(person);
-
-        List<Person> persons = dao.getAllPersons();
-
-        Person inserted = persons.stream()
-                .filter(p -> p.getLastname().equals("DeleteTest"))
-                .findFirst()
-                .orElse(null);
-
-        assertNotNull(inserted);
-
-        dao.deletePerson(inserted.getIdperson());
-
-        List<Person> afterDelete = dao.getAllPersons();
-
-        boolean stillExists = afterDelete.stream()
-                .anyMatch(p -> p.getLastname().equals("DeleteTest"));
-
-        assertFalse(stillExists);
+        assertEquals(1, persons.size());
+        assertEquals("test@mail.com", persons.get(0).getEmailAddress());
+        assertEquals("10 rue test", persons.get(0).getAddress());
     }
 }
