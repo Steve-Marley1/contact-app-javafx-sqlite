@@ -66,7 +66,7 @@ public class MainController {
         });
         birthDatePicker.setPromptText("dd/MM/yyyy");
 
-        installTextFormatters(); // UX (pas métier)
+        installTextFormatters(); 
 
         refreshTable();
 
@@ -81,10 +81,10 @@ public class MainController {
                 birthDatePicker.setValue(p.getBirthDate());
             }
         });
-        // IMPORTANT : supprime le décalage
+
         personTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        // Largeurs proportionnelles
+
         idColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.05);
         firstnameColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
         lastnameColumn.setMaxWidth(1f * Integer.MAX_VALUE * 0.12);
@@ -97,13 +97,13 @@ public class MainController {
 
     private void installTextFormatters() {
 
-        // Phone: chiffres only + max 10 (UX)
+
         phoneField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             return newText.matches("\\d{0,10}") ? change : null;
         }));
 
-        // Names: lettres + espace + - + ' (UX)
+      
         firstnameField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             return newText.matches("[\\p{L} '\\-]{0,45}") ? change : null;
@@ -114,14 +114,13 @@ public class MainController {
             return newText.matches("[\\p{L} '\\-]{0,45}") ? change : null;
         }));
 
-        // Email: empêcher les espaces (UX)
+
         emailField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             return newText.contains(" ") ? null : change;
         }));
     }
 
-    // ================= BUTTONS =================
 
     @FXML
     private void handleAdd() {
@@ -181,10 +180,10 @@ public class MainController {
         }
     }
 
-    // ================= HELPERS =================
+    
 
     private Person buildPersonFromForm() {
-        // ordre CORRECT : emailField puis addressField
+        
         return new Person(
                 firstnameField.getText(),
                 lastnameField.getText(),

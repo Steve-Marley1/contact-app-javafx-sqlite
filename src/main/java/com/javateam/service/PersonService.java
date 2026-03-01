@@ -11,14 +11,14 @@ public class PersonService {
 
     private final PersonDAO dao;
 
-    // Lettres (y compris accents) + espaces + - + '
+
     private static final Pattern NAME_PATTERN =
             Pattern.compile("^[\\p{L}]+([\\p{L} '\\-][\\p{L}]+)*$");
 
     private static final Pattern PHONE_PATTERN =
             Pattern.compile("^\\d{10}$");
 
-    // Email plus strict (doit avoir @ + domaine + extension)
+
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
@@ -29,12 +29,11 @@ public class PersonService {
         this.dao = new PersonDAO();
     }
 
-    // Injection pour tests unitaires
     public PersonService(PersonDAO dao) {
         this.dao = dao;
     }
 
-    // ================= CRUD =================
+
 
     public int addPerson(Person person) {
         validatePerson(person);
@@ -58,7 +57,7 @@ public class PersonService {
         return dao.getAllPersons();
     }
 
-    // ================= VALIDATION METIER =================
+
 
     private void validatePerson(Person p) {
         if (p == null) throw new IllegalArgumentException("Personne invalide.");

@@ -10,7 +10,7 @@
             prefWidth="1000"
             prefHeight="650">
 
-    <!-- HEADER -->
+ 
     <top>
         <VBox alignment="CENTER"
               style="-fx-background-color: linear-gradient(to right, #1f3c88, #0f2027);"
@@ -23,7 +23,7 @@
         </VBox>
     </top>
 
-    <!-- TABLE -->
+
     <center>
         <VBox VBox.vgrow="ALWAYS">
             <padding>
@@ -48,7 +48,7 @@
         </VBox>
     </center>
 
-    <!-- FORM -->
+
     <bottom>
         <VBox spacing="20">
             <padding>

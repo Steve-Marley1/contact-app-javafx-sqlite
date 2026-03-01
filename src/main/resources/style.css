@@ -3,72 +3,70 @@
     -fx-background-color: #f4f6f9;
 }
 
-/* ================= TABLE ================= */
 
 .table-view {
     -fx-border-color: transparent;
     -fx-background-insets: 0;
 }
 
-/* HEADER */
+
+
 .table-view .column-header-background {
-    -fx-background-color: #2f6fa5;
+    -fx-background-color: linear-gradient(to right, #1e3c72, #2a5298);
+    -fx-background-radius: 10 10 0 0;
+    -fx-padding: 5;
 }
 
 .table-view .column-header,
 .table-view .filler {
-    -fx-size: 42px;
+    -fx-size: 48px;
     -fx-border-color: transparent;
+    -fx-background-color: transparent;
 }
+
 
 .table-view .column-header .label {
     -fx-text-fill: white;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-alignment: CENTER;
 }
 
-/* ROW HEIGHT */
-.table-row-cell {
-    -fx-cell-size: 45px;
+
+.table-view .column-header:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Zebra rows */
-.table-row-cell:odd {
-    -fx-background-color: white;
+
+.table-view .column-header {
+    -fx-border-color: rgba(255,255,255,0.15);
+    -fx-border-width: 0 1 0 0;
 }
 
-.table-row-cell:even {
-    -fx-background-color: #eef3f9;
-}
-
-/* Hover */
 .table-row-cell:hover {
     -fx-background-color: #dbeafe;
 }
 
-/* ================= SELECTION BLEU PRO ================= */
 
-/* Ligne sélectionnée */
 .table-row-cell:selected {
     -fx-background-color: #2f80ed;
 }
 
-/* Cellules sélectionnées */
+
 .table-view:focused .table-row-cell:selected .table-cell {
     -fx-background-color: #2f80ed;
 }
 
-/* Texte blanc quand sélectionné */
 .table-row-cell:selected .text {
     -fx-fill: white;
 }
 
-/* Supprimer bordure interne moche */
+
 .table-view .table-cell {
     -fx-border-color: transparent;
 }
 
-/* ================= BUTTONS ================= */
+
 
 .button {
     -fx-background-radius: 20;
